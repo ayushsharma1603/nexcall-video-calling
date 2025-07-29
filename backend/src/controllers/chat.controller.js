@@ -2,7 +2,7 @@ import { streamToken } from "../lib/stream.js";
 
 export async function getStreamToken(req, res) {
   try {
-    const token = streamToken(req.user.id);
+    const token = await streamToken(req.user.id);
 
     res.status(200).json({ token });
   } catch (error) {

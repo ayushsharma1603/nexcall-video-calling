@@ -19,26 +19,23 @@ This monorepo contains both the frontend and backend folders.
 
 ## 📁 Project Structure
 
-
-
 ```
 nexcall/
-├── frontend/    # React app with TailwindCSS 
+├── frontend/    # React app with TailwindCSS
 └── backend/     # Node.js Express API with MongoDB and JWT Auth
 ```
 
-
-
 ## 🛠 Tech Stack
 
-| Area      | Technology                          |
-|-----------|--------------------------------------|
-| Frontend  | React, TailwindCSS, React Query |
-| Backend   | Node.js, Express, MongoDB, JWT       |
-| Realtime  | Stream Chat & Video SDK              |
-| Tools     | Vite, DaisyUI, Axios, Lucide Icons   |
+| Area     | Technology                         |
+| -------- | ---------------------------------- |
+| Frontend | React, TailwindCSS, React Query    |
+| Backend  | Node.js, Express, MongoDB, JWT     |
+| Realtime | Stream Chat & Video SDK            |
+| Tools    | Vite, DaisyUI, Axios, Lucide Icons |
 
 ---
+
 ## 🛠️ Installation
 
 ### 1. Clone the Repository
@@ -55,7 +52,9 @@ npm install
 # Create a .env file with necessary variables
 npm run dev
 ```
+
 ### 3. Setup Frontend
+
 ```bash
 cd frontend
 npm install
@@ -63,13 +62,16 @@ npm run dev
 ```
 
 ### 🔐 Environment Variables
+
 ```bash
 PORT=5000
 MONGO_URI=your_mongodb_connection
 JWT_SECRET=your_jwt_secret
 STREAM_API_KEY=your_stream_api_key
 STREAM_API_SECRET=your_stream_api_secret
+VITE_STREAM_API_KEY=your_stream_api_key
 ```
+
 ## 🙌 Contributing
 
 Feel free to open issues or PRs if you'd like to improve NexCall or add new features.
@@ -91,6 +93,3 @@ This project is licensed under the [MIT License](LICENSE).
 ---
 
 > Built with ❤️ by **Ayush Sharma**
-
-
-

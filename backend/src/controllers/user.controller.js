@@ -1,30 +1,31 @@
 import FriendRequest from "../models/FriendRequests.model.js";
+import User from "../models/user.model.js";
 export async function getRecommendedUsers(req, res) {
   try {
-    const currentUserId = req.user.userId;
+    const currentUserId = req.user._id || req.user.userId; // Use userId from req.user if available
     const currentUser = await User.findById(currentUserId);
-
-    if (!currentUser) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
+    const usersThatSentRequestToCurrentUser = await FriendRequest.find({
+      recipient: currentUserId,
+      status: "pending",
+    }).select("sender");
     const recommendedUsers = await User.find({
-      _id: { $ne: currentUserId, $nin: currentUser.friends },
-      isOnboarded: true,
-    })
-      .select("fullName profilePic nativeLanguage bio")
-      .lean();
-
+      $and: [
+        { _id: { $ne: currentUserId } }, //exclude current user
+        { _id: { $nin: currentUser.friends } }, // exclude current user's friends
+        { isOnboarded: true },
+        { _id: { $nin: usersThatSentRequestToCurrentUser.map((req) => req.sender) } }, // exclude users who sent friend requests to current user
+      ],
+    });
     res.status(200).json(recommendedUsers);
   } catch (error) {
-    console.error("Error fetching recommended users:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("Error in getRecommendedUsers controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 }
 
 export async function getFriends(req, res) {
   try {
-    const currentUser = await User.findById(req.user.userId)
+    const currentUser = await User.findById(req.user._id)
       .select("friends")
       .populate("friends", "fullName profilePic nativeLanguage bio");
 
@@ -41,8 +42,10 @@ export async function getFriends(req, res) {
 
 export async function sendRequest(req, res) {
   try {
+    
     const sender = req.user._id;
     const receiver = req.params.userId;
+    const senderObject = await User.findById(sender);
     if (sender === receiver) {
       return res
         .status(400)
@@ -54,7 +57,7 @@ export async function sendRequest(req, res) {
     }
 
     //check if user already friends
-    if (sender.friends.includes(receiver)) {
+    if (senderObject.friends.includes(receiver)) {
       return res
         .status(400)
         .json({ message: "You already friends to this user" });
@@ -86,7 +89,7 @@ export async function sendRequest(req, res) {
 
 export async function acceptRequest(req, res) {
   try {
-    const { id: requestId } = req.params;
+    const { requestId } = req.params;
 
     const friendRequest = await FriendRequest.findById(requestId);
 
@@ -104,8 +107,7 @@ export async function acceptRequest(req, res) {
     friendRequest.status = "accepted";
     await friendRequest.save();
 
-    // add each user to the other's friends array
-    // $addToSet: adds elements to an array only if they do not already exist.
+    // Add each user to the other's friends array
     await User.findByIdAndUpdate(friendRequest.sender, {
       $addToSet: { friends: friendRequest.recipient },
     });
@@ -116,7 +118,7 @@ export async function acceptRequest(req, res) {
 
     res.status(200).json({ message: "Friend request accepted" });
   } catch (error) {
-    console.log("Error in acceptFriendRequest controller", error.message);
+    console.log("Error in acceptFriendRequest controller:", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }
