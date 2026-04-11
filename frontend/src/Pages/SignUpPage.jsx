@@ -1,40 +1,84 @@
 import { useState } from "react";
 import { Rainbow } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import toast, { Toaster } from "react-hot-toast";
+import { Link } from "react-router-dom";
 import useSignUp from "../hooks/useSignUp";
 
 const SignUpPage = () => {
-  const {signupMutation, isPending, error}= useSignUp();
+  const {
+    requestOtpMutation,
+    verifyOtpMutation,
+    isRequestingOtp,
+    isVerifyingOtp,
+    requestOtpError,
+    verifyOtpError,
+    resetRequestOtp,
+    resetVerifyOtp,
+  } = useSignUp();
   const [signupData, setSignupData] = useState({
     fullName: "",
     email: "",
     password: "",
+    otp: "",
   });
+  const [isOtpStep, setIsOtpStep] = useState(false);
+  const [otpEmail, setOtpEmail] = useState("");
+  const [otpExpiresInMinutes, setOtpExpiresInMinutes] = useState(10);
 
-  // const validateForm = () => {
-  //   if (!signupData.fullName || !signupData.email || !signupData.password){
-  //     toast.error("Please fill in all fields.");
-  //     return false;
-  //   }
-  //   if(signupData.password.length < 6) {
-  //     toast.error("Password must be at least 6 characters long.");
-  //     return false;
-  //   }
-  //   if(signupData.fullName.length < 3) {
-  //     toast.error("Full name must be at least 3 characters long.");
-  //     return false;
-  //   }
-  //   return true;
-  // }
+  const activeError = isOtpStep ? verifyOtpError : requestOtpError;
+  const isBusy = isRequestingOtp || isVerifyingOtp;
 
-  const handleSignup = (e) => {
+  const handleRequestOtp = (e) => {
     e.preventDefault();
-    // const isValid = validateForm()
-    // if(isValid){
-    //   signupMutation(signupData)
-    // }
-    signupMutation(signupData);
+
+    resetVerifyOtp();
+    requestOtpMutation(
+      {
+        fullName: signupData.fullName,
+        email: signupData.email,
+        password: signupData.password,
+      },
+      {
+        onSuccess: (data) => {
+          setIsOtpStep(true);
+          setOtpEmail(data.email || signupData.email);
+          setOtpExpiresInMinutes(data.expiresInMinutes || 10);
+        },
+      }
+    );
+  };
+
+  const handleVerifyOtp = (e) => {
+    e.preventDefault();
+
+    resetRequestOtp();
+    verifyOtpMutation({
+      email: otpEmail || signupData.email,
+      otp: signupData.otp,
+    });
+  };
+
+  const handleEditDetails = () => {
+    resetVerifyOtp();
+    setSignupData((currentData) => ({ ...currentData, otp: "" }));
+    setIsOtpStep(false);
+  };
+
+  const handleResendOtp = () => {
+    resetVerifyOtp();
+    requestOtpMutation(
+      {
+        fullName: signupData.fullName,
+        email: signupData.email,
+        password: signupData.password,
+      },
+      {
+        onSuccess: (data) => {
+          setIsOtpStep(true);
+          setOtpEmail(data.email || signupData.email);
+          setOtpExpiresInMinutes(data.expiresInMinutes || 10);
+        },
+      }
+    );
   };
 
   return (
@@ -54,11 +98,11 @@ const SignUpPage = () => {
           </div>
 
           {/* ERROR MESSAGE IF ANY */}
-          {error && (
+          {activeError && (
             <div className="alert alert-error mb-4">
               <div>
                 <span>
-                  {error.response?.data?.message ||
+                  {activeError.response?.data?.message ||
                     "An error occurred. Please try again."}
                 </span>
               </div>
@@ -66,116 +110,184 @@ const SignUpPage = () => {
           )}
 
           <div className="w-full">
-            <form onSubmit={handleSignup}>
+            <form onSubmit={isOtpStep ? handleVerifyOtp : handleRequestOtp}>
               <div className="space-y-4">
                 <div>
-                  <h2 className="text-xl font-semibold">Create an Account</h2>
+                  <h2 className="text-xl font-semibold">
+                    {isOtpStep ? "Verify Your Email" : "Create an Account"}
+                  </h2>
                   <p className="text-sm opacity-70">
-                    Join NexCall and start your adventure!
+                    {isOtpStep
+                      ? `Enter the 6-digit code sent to ${otpEmail || signupData.email}.`
+                      : "Join NexCall and start your adventure!"}
                   </p>
                 </div>
 
-                <div className="space-y-3">
-                  {/* FULLNAME */}
-                  <div className="form-control w-full">
-                    <label className="label">
-                      <span className="label-text">Full Name</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="John Doe"
-                      className="input input-bordered w-full"
-                      value={signupData.fullName}
-                      onChange={(e) =>
-                        setSignupData({
-                          ...signupData,
-                          fullName: e.target.value,
-                        })
-                      }
-                      required
-                    />
-                  </div>
-                  {/* EMAIL */}
-                  <div className="form-control w-full">
-                    <label className="label">
-                      <span className="label-text">Email</span>
-                    </label>
-                    <input
-                      type="email"
-                      placeholder="john@gmail.com"
-                      className="input input-bordered w-full"
-                      value={signupData.email}
-                      onChange={(e) =>
-                        setSignupData({ ...signupData, email: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-                  {/* PASSWORD */}
-                  <div className="form-control w-full">
-                    <label className="label">
-                      <span className="label-text">Password</span>
-                    </label>
-                    <input
-                      type="password"
-                      placeholder="********"
-                      className="input input-bordered w-full"
-                      value={signupData.password}
-                      onChange={(e) =>
-                        setSignupData({
-                          ...signupData,
-                          password: e.target.value,
-                        })
-                      }
-                      required
-                    />
-                    <p className="text-xs opacity-70 mt-1">
-                      Password must be at least 6 characters long
-                    </p>
-                  </div>
-
-                  <div className="form-control">
-                    <label className="label cursor-pointer justify-start gap-2">
+                {!isOtpStep ? (
+                  <div className="space-y-3">
+                    <div className="form-control w-full">
+                      <label className="label">
+                        <span className="label-text">Full Name</span>
+                      </label>
                       <input
-                        type="checkbox"
-                        className="checkbox checkbox-sm"
+                        type="text"
+                        placeholder="John Doe"
+                        className="input input-bordered w-full"
+                        value={signupData.fullName}
+                        onChange={(e) =>
+                          setSignupData({
+                            ...signupData,
+                            fullName: e.target.value,
+                          })
+                        }
                         required
                       />
+                    </div>
+
+                    <div className="form-control w-full">
+                      <label className="label">
+                        <span className="label-text">Email</span>
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="john@gmail.com"
+                        className="input input-bordered w-full"
+                        value={signupData.email}
+                        onChange={(e) =>
+                          setSignupData({
+                            ...signupData,
+                            email: e.target.value,
+                          })
+                        }
+                        required
+                      />
+                    </div>
+
+                    <div className="form-control w-full">
+                      <label className="label">
+                        <span className="label-text">Password</span>
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="********"
+                        className="input input-bordered w-full"
+                        value={signupData.password}
+                        onChange={(e) =>
+                          setSignupData({
+                            ...signupData,
+                            password: e.target.value,
+                          })
+                        }
+                        required
+                      />
+                      <p className="text-xs opacity-70 mt-1">
+                        Password must be at least 6 characters long
+                      </p>
+                    </div>
+
+                    <div className="form-control">
+                      <label className="label cursor-pointer justify-start gap-2">
+                        <input
+                          type="checkbox"
+                          className="checkbox checkbox-sm"
+                          required
+                        />
 
                         <span className="text-xs leading-tight">
                           I agree to the{" "}
-                          <Link to="/terms" className="text-primary hover:underline">
+                          <Link
+                            to="/terms"
+                            className="text-primary hover:underline"
+                          >
                             terms of service
                           </Link>{" "}
                           and{" "}
-                          <Link to="/privacy" className="text-primary hover:underline">
+                          <Link
+                            to="/privacy"
+                            className="text-primary hover:underline"
+                          >
                             privacy policy
                           </Link>
                         </span>
-
-                    </label>
+                      </label>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm">
+                      <p className="font-medium">Verification code sent</p>
+                      <p className="mt-1 opacity-70">
+                        Your code expires in {otpExpiresInMinutes} minutes.
+                      </p>
+                    </div>
+
+                    <div className="form-control w-full">
+                      <label className="label">
+                        <span className="label-text">OTP Code</span>
+                      </label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]{6}"
+                        maxLength={6}
+                        placeholder="123456"
+                        className="input input-bordered w-full tracking-[0.5em]"
+                        value={signupData.otp}
+                        onChange={(e) =>
+                          setSignupData({
+                            ...signupData,
+                            otp: e.target.value.replace(/\D/g, "").slice(0, 6),
+                          })
+                        }
+                        required
+                      />
+                      <p className="text-xs opacity-70 mt-1">
+                        Enter the 6-digit code from your email.
+                      </p>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        className="btn btn-outline flex-1"
+                        onClick={handleEditDetails}
+                        disabled={isBusy}
+                      >
+                        Edit Details
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost flex-1"
+                        onClick={handleResendOtp}
+                        disabled={isBusy}
+                      >
+                        {isRequestingOtp ? "Resending..." : "Resend OTP"}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <button className="btn btn-primary w-full" type="submit">
-                  {isPending ? (
+                  {isBusy ? (
                     <>
                       <span className="loading loading-spinner loading-xs"></span>
-                      Loading...
+                      {isOtpStep ? "Verifying..." : "Sending OTP..."}
                     </>
                   ) : (
-                    "Create Account"
+                    (isOtpStep ? "Verify & Create Account" : "Create Account")
                   )}
                 </button>
 
-                <div className="text-center mt-4">
-                  <p className="text-sm">
-                    Already have an account?{" "}
-                    <Link to="/login" className="text-primary hover:underline">
-                      Sign in
-                    </Link>
-                  </p>
-                </div>
+                {!isOtpStep && (
+                  <div className="text-center mt-4">
+                    <p className="text-sm">
+                      Already have an account?{" "}
+                      <Link to="/login" className="text-primary hover:underline">
+                        Sign in
+                      </Link>
+                    </p>
+                  </div>
+                )}
               </div>
             </form>
           </div>
