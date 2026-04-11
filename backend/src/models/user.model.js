@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       minlength: 3,
+      trim: true,
     },
     password: {
       type: String,
@@ -18,6 +19,8 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
+      lowercase: true,
+      trim: true,
       match: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
     },
     bio: {
@@ -58,8 +61,13 @@ const userSchema = new mongoose.Schema(
 // When you define a Mongoose model using mongoose.model(...), it freezes the schema. Any middleware like .pre("save") must be added before this line. Otherwise, the middleware won’t work and password won’t be hashed.
 
 userSchema.pre("save", async function (next) {
-  if (!this.isModified("password"))
-    return next("password must be modified before saving");
+  if (!this.isModified("password")) return next();
+
+  // Allow pre-hashed passwords when a verified pending signup is promoted to a real user.
+  if (/^\$2[aby]\$\d{2}\$/.test(this.password)) {
+    return next();
+  }
+
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);

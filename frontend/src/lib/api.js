@@ -5,6 +5,14 @@ export const signupMutate = async (signupData) => {
   return response.data;
 };
 
+export const verifySignupOtpMutate = async (verificationData) => {
+  const response = await axiosInstance.post(
+    "/auth/signup/verify",
+    verificationData
+  );
+  return response.data;
+};
+
 export const login = async (loginData) => {
   const response = await axiosInstance.post("/auth/login", loginData);
   return response.data;

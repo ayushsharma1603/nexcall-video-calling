@@ -9,6 +9,7 @@ This monorepo contains both the frontend and backend folders.
 ## 🧩 Features
 
 - 🔐 User Authentication with JWT
+- 🔐 Email OTP verification during sign-up with Brevo
 - 💬 Real-time Messaging via Stream Chat API
 - 📹 One-on-One and Group Video Calls using Stream Video SDK
 - 🧠 Context-based State Management
@@ -65,10 +66,15 @@ npm run dev
 
 ```bash
 PORT=5000
-MONGO_URI=your_mongodb_connection
+MONGODB_URI=your_mongodb_connection
 JWT_SECRET=your_jwt_secret
 STREAM_API_KEY=your_stream_api_key
 STREAM_API_SECRET=your_stream_api_secret
+BREVO_API_KEY=your_brevo_api_key
+BREVO_SENDER_EMAIL=verified_sender@yourdomain.com
+BREVO_SENDER_NAME=NexCall
+SIGNUP_OTP_TTL_MINUTES=10
+SIGNUP_OTP_MAX_ATTEMPTS=5
 VITE_STREAM_API_KEY=your_stream_api_key
 ```
 
